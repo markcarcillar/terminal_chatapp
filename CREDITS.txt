@@ -1,0 +1,3 @@
+https://stackoverflow.com/questions/24169893/how-to-prevent-exception-ignored-in-module-threading-from-while-settin
+https://stackoverflow.com/questions/2408560/non-blocking-console-input
+https://stackoverflow.com/questions/48020593/python-what-are-the-advantages-of-async-over-threads
