@@ -1,6 +1,5 @@
 import asyncio
 import json
-import secrets
 
 import websockets
 
@@ -42,6 +41,7 @@ class Server:
                 1008,
                 'Invalid authorization header or username header is already registered on the server.'
             )
+            
             # Show the websocket remote address 
             # that is rejected to console
             print(
@@ -52,9 +52,9 @@ class Server:
         
         try:
             # When there is a message from
-            # from any websocket, send the 
-            # message to all websocket that 
-            # is connected to the server.
+            # any websocket, send the message 
+            # to all websocket that is 
+            # connected to the server.
             async for message in websocket:
                 message = json.loads(message)
                 if message:
@@ -107,7 +107,8 @@ class Server:
         # websocket server.
         await self.notify_all_user(users_event(len(self.users)))
         
-        # Show who connects to the websocket server.
+        # Show to who connects to the 
+        # websocket server.
         print('[Connected]')
         print('Username:', 'No username' if username is None else username)
         print(
@@ -138,7 +139,8 @@ class Server:
 
         await self.notify_all_user(users_event(len(self.users)))
         
-        # Show who disconnects to the websocket server.
+        # Show to console who disconnects 
+        # to the websocket server.
         print('[Disconnected]')
         print('Username:', 'No username' if username is None else username)
         print(
@@ -151,7 +153,7 @@ class Server:
     async def notify_all_user(self, message):
         '''
         If `self.users` is not empty, send the
-        message to all `self.users`.
+        `message` to all `self.users`.
         '''
         if self.users:
             await asyncio.wait(

@@ -3,8 +3,6 @@ from argparse import ArgumentParser
 from .client import Client
 from .server import Server
 
-class ForExitException(Exception):
-    pass
 
 class CommandLineInterface:
     '''
@@ -57,6 +55,7 @@ class CommandLineInterface:
             '''
         )
         self.args = self.parser.parse_args()
+    
     
     def run(self):
         '''

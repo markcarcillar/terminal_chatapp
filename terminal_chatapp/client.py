@@ -9,6 +9,7 @@ import websockets
 from .input import NonBlockingInput
 from .event import message_event
 
+
 class Client:
     '''
     Client API for Terminal Chat Application.
@@ -88,7 +89,7 @@ class Client:
         every `self.sleepy_head()`. If event type
         is `users`, it shows how many user is 
         connected to the server. If event type is 
-        `message`, it prints the message sender 
+        `message`, it shows the message sender 
         username and its message content, but if the
         message sender is this client, it does not
         show the message.
@@ -116,7 +117,7 @@ class Client:
 
     def create_username(self):
         '''
-        Returns a random username started at `user_` then numbers.
+        Returns a random username started at `user_` then random 4 numbers. For instance, `user_1234`.
         '''
         return 'user_' + ''.join(choice(digits) for _ in range(4))
     

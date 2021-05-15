@@ -1,6 +1,9 @@
-# From
+# Idea from:
 # https://stackoverflow.com/questions/2408560/non-blocking-console-input
+
+
 import threading
+
 
 class NonBlockingInput(threading.Thread):
     '''A non-blocking `input()`.'''
@@ -16,7 +19,10 @@ class NonBlockingInput(threading.Thread):
         self.callback = callback
         self.prefix = input_prefix
         super(NonBlockingInput, self).__init__(name=thread_name)
-        self.daemon = daemon # Dies when the main thread is dead if True
+        
+        # If true, this dies when the main thread is dead.
+        self.daemon = daemon
+        
         self.start()
         
 
