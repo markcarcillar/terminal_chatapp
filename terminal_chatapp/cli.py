@@ -8,13 +8,13 @@ class ForExitException(Exception):
 
 class CommandLineInterface:
     '''
-    Command Line Interface for Terminal Chat Application
+    Command Line Interface for Terminal Chat Application.
     '''
 
     def __init__(self):
         self.parser = ArgumentParser(description=self.__doc__)
         self.parser.add_argument(
-            'service',
+            'program',
             choices=['client', 'server'],
             help='Run the program as client or server.'
         )
@@ -23,12 +23,38 @@ class CommandLineInterface:
             '--port',
             default=430,
             type=int,
-            help='Server port. Default is 430.'
+            help='''
+            Server port. This only works for server program.
+            Default is 430. 
+            '''
+        )
+        self.parser.add_argument(
+            '--url',
+            default='ws://localhost:430/',
+            help='''
+            URL where the client will connect. This only 
+            works for client program. Default is 
+            "ws://localhost:430/".
+            '''
+        )
+        self.parser.add_argument(
+            '--username',
+            default='',
+            help='''
+            Username for username header of client. This only 
+            works for client program. If you don't give it a 
+            value, the Client Program will create its own
+            username. Starting with user then number. Example:
+            "user_1234".
+            '''
         )
         self.parser.add_argument(
             '--password',
             default='top_secret',
-            help='Password for authorization header. Default is top_secret.'
+            help='''
+            Password for authorization header. 
+            Default is `top_secret`.
+            '''
         )
         self.args = self.parser.parse_args()
     
@@ -37,11 +63,19 @@ class CommandLineInterface:
         Runs the program.
         '''
         try:
-            if self.args.service == 'server':
+            if self.args.program == 'server':
                 server = Server(self.args.port, self.args.password)
                 server.run()
-            elif self.args.service == 'client':
-                client = Client(self.args.port, self.args.password)
+            elif self.args.program == 'client':
+                client = Client(
+                    self.args.url, 
+                    self.args.username,
+                    self.args.password
+                )
                 client.run()
         except KeyboardInterrupt:
-            print('\nProgram has been stopped.')
+            if self.args.program == 'server':
+                print('\nServer has been stopped.')
+            elif self.args.program == 'client':
+                if client._successfully_connected:
+                    print(f'\nDisconnected to the `{client.url}` server.')
