@@ -20,7 +20,7 @@ class Client:
         self, 
         cryptography_key, 
         cryptography_digest_count=3, 
-        url='ws://localhost:430/', 
+        url='ws://localhost:1719/', 
         username='', 
         password='top_secret'
         ):

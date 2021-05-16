@@ -216,7 +216,6 @@ class Server:
         websocket_password = self.security.decrypt(
             headers['authorization']
         )
-        print(websocket_password)
 
         # If authorization header can't be decrypted,
         # return False.

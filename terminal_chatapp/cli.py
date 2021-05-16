@@ -15,7 +15,7 @@ class CommandLineInterface:
             prog='Terminal Chat Application',
             description=self.__doc__
         )
-
+        
         # Subparser for client and server program.
         subparser = parser.add_subparsers(
             help='Choose a program between client and server.',
@@ -31,10 +31,10 @@ class CommandLineInterface:
         server_parser.add_argument(
             '-p',
             '--port',
-            default=430,
+            default=1719,
             type=int,
             help='''
-            Server port. Default is 430. 
+            Server port. Default is 1719. 
             '''
         )
         server_parser.add_argument(
@@ -52,7 +52,7 @@ class CommandLineInterface:
             type=int,
             help='''
             Digest count for cryptography of server 
-            and client program.
+            and client program. Max of 5 and min of 1.
             ''',
             dest='digest_count'
         )
@@ -65,7 +65,7 @@ class CommandLineInterface:
         )
         client_parser.add_argument(
             'cryptography_key',
-            default='ws://localhost:430/',
+            default='ws://localhost:1719/',
             help='''
             Cryptography key for cryptography of server 
             and client program.
@@ -73,10 +73,10 @@ class CommandLineInterface:
         )
         client_parser.add_argument(
             '--url',
-            default='ws://localhost:430/',
+            default='ws://localhost:1719/',
             help='''
             URL where the client will connect. Default is 
-            "ws://localhost:430/".
+            "ws://localhost:1719/".
             ''',
             dest='websocket_url'
         )
@@ -105,12 +105,23 @@ class CommandLineInterface:
             type=int,
             help='''
             Digest count for cryptography of server 
-            and client program.
+            and client program. Max of 5 and min of 1.
             ''',
             dest='digest_count'
         )
         
         self.args = parser.parse_args()
+        
+        # Validates if digest count for cryptography
+        # is in between 1-5. If not raise
+        # `parser.error()`.
+        if not self.args.digest_count in range(1, 6):
+            # Chooce which parser to use. If client
+            # or server program.
+            error_info = f'Invalid digest count for cryptography. It should be in between of 1-5 but got "{self.args.digest_count}".'
+            if self.args.program == 'server':
+                raise server_parser.error(error_info)
+            raise client_parser.error(error_info)
     
     
     def run(self):
