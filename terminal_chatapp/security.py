@@ -17,6 +17,7 @@ class Security:
 
         `message` can be an instance of bytes, str, or int.
         '''
+
         # Make the message to be an instance of bytes if 
         # its just str or int.
         if not isinstance(message, bytes):
@@ -38,6 +39,7 @@ class Security:
 
         `encrypted_message` can be an instance of bytes or str.
         '''
+
         # Make the `encrypted_message` to be an instance of bytes if 
         # its just str.
         if not isinstance(encrypted_message, bytes):
@@ -52,6 +54,6 @@ class Security:
             return decrypted_message
         except InvalidToken:
             # Return None if `encrypted_message` can't be encrypted.
-            # This is to avoid using the try...except statement
+            # This is to avoid using the try...except... statement
             # when using this.
             return None

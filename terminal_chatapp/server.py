@@ -26,13 +26,18 @@ class Server:
         self.port = int(port)
         self.password = password
         self.loop = asyncio.get_event_loop()
-        self.users = set()
-        self.usernames = []
+        
+        # For cryptography of messages of client, 
+        # authorization and username header.
         self.cryptography_key = Fernet.generate_key().decode()
         self.security = Security(
             self.cryptography_key,
             cryptography_digest_count
         )
+
+        # For clients that is connected
+        self.users = set()
+        self.usernames = []
     
     
     async def server(self, websocket, path):
@@ -55,8 +60,7 @@ class Server:
                 'Invalid authorization header or username header is already registered on the server.'
             )
             
-            # Show the websocket remote address
-            # that is rejected to console.
+            # Show to console what remote address is rejected.
             print(
                 '[Rejected]', 
                 f'{websocket.remote_address[0]}:{websocket.remote_address[1]}'
@@ -71,14 +75,14 @@ class Server:
             # to the server.
             # If message can't be decrypted,
             # close the connection since,
-            # only a valid client can send
+            # only a valid websocket can send
             # a right encrypted message.
             async for message in websocket:
                 message = self.security.decrypt(message)
                 if message is None:
-                    websocket.close(
+                    await websocket.close(
                         1008,
-                        'Invalid message. Make sure it is encrypted with the same cryptography key from server.'
+                        'Invalid message. Make sure it is encrypted with the same cryptography key from the server.'
                     )
                     break
                 message = json.loads(message)
@@ -111,6 +115,7 @@ class Server:
         It returns True if registering the websocket 
         is successful, otherwise False.
         '''
+
         # Check if the websocket is authorized, if not
         # return False
         if not self.is_authorized(websocket):
@@ -132,7 +137,7 @@ class Server:
         # websocket server.
         await self.notify_all_user(create_users_event(len(self.users)))
         
-        # Show to who connects to the 
+        # Show to console who connect to the 
         # websocket server.
         print('[Connected]')
         print('Username:', 'No username' if username is None else username)
@@ -165,7 +170,7 @@ class Server:
 
         await self.notify_all_user(create_users_event(len(self.users)))
         
-        # Show to console who disconnects 
+        # Show to console who disconnect
         # to the websocket server.
         print('[Disconnected]')
         print('Username:', 'No username' if username is None else username)
@@ -211,6 +216,7 @@ class Server:
         websocket_password = self.security.decrypt(
             headers['authorization']
         )
+        print(websocket_password)
 
         # If authorization header can't be decrypted,
         # return False.
@@ -221,13 +227,6 @@ class Server:
             return False
         return True
         
-
-    def get_headers(self, websocket):
-        '''
-        Returns the headers as dict from websocket.
-        '''
-        return dict([header for header in websocket.request_headers.raw_items()])
-    
 
     def get_username_header(self, websocket):
         '''
@@ -242,7 +241,7 @@ class Server:
             return None
 
         # Decrypt the websocket username.
-        websocket_username = self.decrypt(
+        websocket_username = self.security.decrypt(
             headers['username']
         )
 
@@ -253,7 +252,14 @@ class Server:
 
         if websocket_username.decode() == '':
             return None
-        return websocket_username
+        return websocket_username.decode()
+
+
+    def get_headers(self, websocket):
+        '''
+        Returns the headers as dict from websocket.
+        '''
+        return dict([header for header in websocket.request_headers.raw_items()])
     
 
     def run(self):
@@ -263,12 +269,13 @@ class Server:
         print(f'Server starts at `ws://localhost:{self.port}/`.')
 
         # Show the cryptography key of server to console
-        # as client needs it for cryptography of headers
-        # and messages.
+        # as client needs it for cryptography of authorization
+        # and username headers, and messages of client.
         print('[Cryptography Key]')
         print('Please copy the following key below, you will need it for connecting to this server:')
         print(f'Key: {self.cryptography_key}')
         
+        # Run the server forever.
         self.loop.run_until_complete(
             websockets.serve(self.server, 'localhost', self.port)
         )
