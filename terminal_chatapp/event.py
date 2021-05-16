@@ -1,21 +1,17 @@
 import json
 
-from .security import Security
-
-
-def encrypted_event(type, digest_count=3, **kwargs):
+def create_event(type, **kwargs):
     '''
-    Creates an encrypted event using `create_event()` function
-    for creating event and `Security` class from our own module
-    for encrypting the event.
+    Returns an event with type of given `type`. The event is JSON
+    encoded.
     '''
     return json.dumps({'type': type, **kwargs})
 
 
-def message_event(_from, message):
+def create_message_event(_from, message):
     event = {'from': _from, 'message': message}
     return create_event('message', **event)
 
 
-def users_event(users_length):
-    return create_event('users', users=users_length)
+def create_users_event(users):
+    return create_event('users', users=users)

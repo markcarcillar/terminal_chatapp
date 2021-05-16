@@ -7,7 +7,8 @@ from string import digits
 import websockets
 
 from .input import NonBlockingInput
-from .event import message_event
+from .event import create_message_event
+from .security import Security
 
 
 class Client:
@@ -15,14 +16,26 @@ class Client:
     Client API for Terminal Chat Application.
     '''
 
-    def __init__(self, url='ws://localhost:430/', username='', password='top_secret'):
+    def __init__(
+        self, 
+        cryptography_key, 
+        cryptography_digest_count=3, 
+        url='ws://localhost:430/', 
+        username='', 
+        password='top_secret'
+        ):
+
+        self.security = Security(
+            cryptography_key, 
+            cryptography_digest_count
+        )
         self.url = url
         self.loop = asyncio.get_event_loop()
         self.message = ''
         self.username = username if username else self.create_username()
         self.headers = {
-            'authorization': password, 
-            'username': self.username
+            'authorization': self.security.encrypt(password), 
+            'username': self.security.encrypt(self.username)
         }
         self._successfully_connected = False
     
@@ -77,7 +90,7 @@ class Client:
         while True:
             if not self.message == '':
                 await websocket.send(
-                    message_event(self.username, self.message)
+                    create_message_event(self.username, self.message)
                 )
                 self.message = ''
             await self.sleepy_head()

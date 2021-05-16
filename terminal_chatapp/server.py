@@ -2,11 +2,13 @@ import asyncio
 import json
 
 import websockets
+from cryptography.fernet import Fernet
 
 from .event import (
-    message_event, 
-    users_event
+    create_message_event, 
+    create_users_event
 )
+from .security import Security
 
 
 class Server:
@@ -14,12 +16,23 @@ class Server:
     Server API for Terminal Chat Application.
     '''
 
-    def __init__(self, port, password='top_secret'):
+    def __init__(
+        self, 
+        port, 
+        password='top_secret', 
+        cryptography_digest_count=3
+        ):
+
         self.port = int(port)
         self.password = password
         self.loop = asyncio.get_event_loop()
         self.users = set()
         self.usernames = []
+        self.cryptography_key = Fernet.generate_key().decode()
+        self.security = Security(
+            self.cryptography_key,
+            cryptography_digest_count
+        )
     
     
     async def server(self, websocket, path):
@@ -42,30 +55,42 @@ class Server:
                 'Invalid authorization header or username header is already registered on the server.'
             )
             
-            # Show the websocket remote address 
-            # that is rejected to console
+            # Show the websocket remote address
+            # that is rejected to console.
             print(
                 '[Rejected]', 
                 f'{websocket.remote_address[0]}:{websocket.remote_address[1]}'
             )
             return
-        
+
         try:
             # When there is a message from
-            # any websocket, send the message 
-            # to all websocket that is 
-            # connected to the server.
+            # any websocket, decrypt the 
+            # message, and send it to all 
+            # websocket that is connected 
+            # to the server.
+            # If message can't be decrypted,
+            # close the connection since,
+            # only a valid client can send
+            # a right encrypted message.
             async for message in websocket:
+                message = self.security.decrypt(message)
+                if message is None:
+                    websocket.close(
+                        1008,
+                        'Invalid message. Make sure it is encrypted with the same cryptography key from server.'
+                    )
+                    break
                 message = json.loads(message)
                 if message:
                     await self.notify_all_user(
-                        message_event(
+                        create_message_event(
                             message['from'],
                             message['message']
                         )
                     )
         finally:
-            # Before the websocket disconnect to the server
+            # Before or after the websocket disconnect to the server
             # unregister them.
             await self.unregister(websocket, path)
 
@@ -105,7 +130,7 @@ class Server:
         
         # Notify the users how many user is connected to the
         # websocket server.
-        await self.notify_all_user(users_event(len(self.users)))
+        await self.notify_all_user(create_users_event(len(self.users)))
         
         # Show to who connects to the 
         # websocket server.
@@ -130,6 +155,7 @@ class Server:
         it will only remove the websocket to 
         `self.users`.
         '''
+
         # Remove the websocket to `self.users` and websocket
         # username to `self.usernames` if it has.
         username = self.get_username_header(websocket)
@@ -137,7 +163,7 @@ class Server:
             self.usernames.remove(username)
         self.users.remove(websocket)
 
-        await self.notify_all_user(users_event(len(self.users)))
+        await self.notify_all_user(create_users_event(len(self.users)))
         
         # Show to console who disconnects 
         # to the websocket server.
@@ -152,10 +178,12 @@ class Server:
 
     async def notify_all_user(self, message):
         '''
-        If `self.users` is not empty, send the
-        `message` to all `self.users`.
+        If `self.users` is not empty, encrypt the
+        `message`, decode it as unicode, and send it 
+        to all `self.users`.
         '''
         if self.users:
+            message = self.security.encrypt(message).decode()
             await asyncio.wait(
                 [
                     user.send(message)
@@ -168,14 +196,28 @@ class Server:
         '''
         Validates the websocket authorization header 
         if its value is equal to `self.password`.
-        It returns True if equal, if not or the 
-        websocket does not have a authorization 
-        header it returns False.
+        
+        It returns True if authorization header
+        and `self.password` are equal. If websocket does
+        not have authorization header or it can't be
+        decrypted with `self.security`, it will return
+        False.
         '''
         headers = self.get_headers(websocket)
         if not 'authorization' in headers:
             return False
-        if not headers['authorization'] == self.password:
+
+        # Decrypt the websocket authorization header.
+        websocket_password = self.security.decrypt(
+            headers['authorization']
+        )
+
+        # If authorization header can't be decrypted,
+        # return False.
+        if websocket_password is None:
+            return False
+
+        if not websocket_password.decode() == self.password:
             return False
         return True
         
@@ -189,16 +231,29 @@ class Server:
 
     def get_username_header(self, websocket):
         '''
-        Returns the username from websocket header.
-        If not found or username is an empty 
-        string, it returns None.
+        Encrypts the username from websocket header
+        and return it. If not found, username is 
+        an empty string, or username header can't be
+        decrypted with `self.security`, it returns 
+        None.
         '''
         headers = self.get_headers(websocket)
         if not 'username' in headers:
             return None
-        if headers['username'] == '':
+
+        # Decrypt the websocket username.
+        websocket_username = self.decrypt(
+            headers['username']
+        )
+
+        # If websocket username can't be decrypted
+        # return None
+        if websocket_username is None:
             return None
-        return headers['username']
+
+        if websocket_username.decode() == '':
+            return None
+        return websocket_username
     
 
     def run(self):
@@ -206,6 +261,14 @@ class Server:
         Start running the server.
         '''
         print(f'Server starts at `ws://localhost:{self.port}/`.')
+
+        # Show the cryptography key of server to console
+        # as client needs it for cryptography of headers
+        # and messages.
+        print('[Cryptography Key]')
+        print('Please copy the following key below, you will need it for connecting to this server:')
+        print(f'Key: {self.cryptography_key}')
+        
         self.loop.run_until_complete(
             websockets.serve(self.server, 'localhost', self.port)
         )

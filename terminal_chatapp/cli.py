@@ -10,7 +10,10 @@ class CommandLineInterface:
     '''
 
     def __init__(self):
-        self.parser = ArgumentParser(description=self.__doc__)
+        self.parser = ArgumentParser(
+            prog='Terminal Chat Application',
+            description=self.__doc__
+        )
         self.parser.add_argument(
             'program',
             choices=['client', 'server'],
