@@ -5,7 +5,7 @@ with open('README.md') as readmefile:
 
 setup(
     name='terminal-chatapp',
-    version='1.0.0',
+    version='1.0.2',
     author='Mark Carcillar',
     description='Secure communication on terminal.',
     long_description=long_description,
